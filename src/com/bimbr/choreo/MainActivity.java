@@ -25,16 +25,11 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        
-            String path = Environment.getExternalStorageDirectory().getAbsolutePath();
-            Intent musicSelection = new Intent(path);
-            musicSelection.setType("audio/mp3");
-            musicSelection.setAction(Intent.ACTION_GET_CONTENT);
-            musicSelection.addCategory(Intent.CATEGORY_OPENABLE);
-            startActivityForResult(Intent.createChooser(musicSelection, "select music"), SELECT_MUSIC_REQUEST_CODE);
-            onResume();
-        
-        final ScrollView choreoView = (ScrollView) findViewById(R.id.choreoView);        
+        promptForMusic();
+    }
+
+	private void startMediaPlayer(String selectedAudioPath) {
+		final ScrollView choreoView = (ScrollView) findViewById(R.id.choreoView);        
 
         final MediaController mediaController = new MediaController(this);
         MediaPlayer mediaPlayer = new MediaPlayer();
@@ -112,16 +107,24 @@ public class MainActivity extends Activity {
 			    });				
 			}});
 
-        String audioFile = "dupa.mp3"; //this.getIntent().getStringExtra("audiFileName");
-        
         try {
-          mediaPlayer.setDataSource(audioFile);
+          mediaPlayer.setDataSource(selectedAudioPath);
           mediaPlayer.prepare();
           mediaPlayer.start();
+          Log.d("AudioPlayer", "started playing " + selectedAudioPath);
         } catch (IOException e) {
-          Log.e("AudioPlayer", "Could not open file " + audioFile + " for playback.", e);
+          Log.e("AudioPlayer", "Could not open file " + selectedAudioPath + " for playback.", e);
         }
-    }
+	}
+
+	private void promptForMusic() {
+		String path = Environment.getExternalStorageDirectory().getAbsolutePath();
+        Intent musicSelection = new Intent(path);
+        musicSelection.setType("audio/mp3");
+        musicSelection.setAction(Intent.ACTION_GET_CONTENT);
+        musicSelection.addCategory(Intent.CATEGORY_OPENABLE);
+        startActivityForResult(Intent.createChooser(musicSelection, "select music"), SELECT_MUSIC_REQUEST_CODE);
+	}
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -136,6 +139,7 @@ public class MainActivity extends Activity {
 			case SELECT_MUSIC_REQUEST_CODE:
 				Uri selectedAudioUri = data.getData();
 				String selectedAudioPath = getPathAudio(selectedAudioUri);
+		        startMediaPlayer(selectedAudioPath);
 				break;
 			}
 		}
