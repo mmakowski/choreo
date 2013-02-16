@@ -2,7 +2,6 @@ package com.bimbr.choreo.view;
 
 import static java.lang.Math.max;
 
-import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -12,6 +11,7 @@ import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 
 import com.bimbr.android.media.NotifyingMediaPlayer;
@@ -37,17 +37,19 @@ public class ChoreographyView extends View {
 
     private final Timer timer = new Timer(true);
 
-    private static final Paint barBarPaint = barPaint(0xff202020);
-    private static final Paint playBarPaint = barPaint(0xff33B5E5);
+    private static final Paint barBarPaint     = paint(0xff202020);
+    private static final Paint playBarPaint    = paint(0xff33B5E5);
+    private static final Paint measureBarPaint = paint(0xffa0a0a0);
 
     private final float displayDpi = getDisplayDpi();
 
     // mutable fields
 
     private NotifyingMediaPlayer player;
-    // bar positions are cached, based on the assumption that the view size will change infrequently relative to
-    // how often bar positions need to be checked
+    // bar positions and measure points are cached, based on the assumption that the view size will
+    // change infrequently relative to how often bar positions need to be checked
     private int[]                barPositions;
+    private int[]                measurePositions;
 
     private int                  beatsPerMinute = 120;
     private int                  measuresPerBar = 4;
@@ -58,24 +60,27 @@ public class ChoreographyView extends View {
         super(context, attrs);
     }
 
-    private float getDisplayDpi() {
-        if (isInEditMode()) return 1f;
-        final DisplayMetrics metrics = new DisplayMetrics();
-        ((android.view.WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getMetrics(metrics);
-        return metrics.density;
-    }
-
-    private static Paint barPaint(final int colour) {
-        final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setColor(colour);
-        paint.setStyle(Paint.Style.FILL);
-        return paint;
-    }
-
     @Override
     public void onDraw(final Canvas canvas) {
+        drawMeasureBars(canvas);
         drawBarBars(canvas);
         drawPlayBar(canvas);
+    }
+
+    private void drawBarBars(final Canvas canvas) {
+        if (player != null) {
+            for (final int pos : barPositions) {
+                canvas.drawLine(pos, 0, pos, getHeight(), barBarPaint);
+            }
+        }
+    }
+
+    private void drawMeasureBars(final Canvas canvas) {
+        if (player != null) {
+            for (final int pos : measurePositions) {
+                canvas.drawLine(pos, 0, pos, getHeight(), measureBarPaint);
+            }
+        }
     }
 
     private void drawPlayBar(final Canvas canvas) {
@@ -90,14 +95,6 @@ public class ChoreographyView extends View {
         return msToX(player.getCurrentPosition());
     }
 
-    private void drawBarBars(final Canvas canvas) {
-        if (player != null) {
-            for (final int pos : barPositions) {
-                canvas.drawLine(pos, 0, pos, getHeight(), barBarPaint);
-            }
-        }
-    }
-
     @Override
     protected void onMeasure(final int widthMeasureSpec, final int heightMeasureSpec) {
         final int minw = getPaddingLeft() + getPaddingRight() + max(getSuggestedMinimumWidth(), audioWidth()) ;
@@ -110,7 +107,14 @@ public class ChoreographyView extends View {
 
     @Override
     protected void onSizeChanged(final int w, final int h, final int oldw, final int oldh) {
-        setBarPositions();
+        setBarAndMeasurePositions();
+    }
+
+    @Override
+    public boolean onTouchEvent(final MotionEvent event) {
+        final boolean superResult = super.onTouchEvent(event);
+        // TODO: recognise which measure was touched
+        return superResult;
     }
 
     private int audioWidth() {
@@ -139,35 +143,38 @@ public class ChoreographyView extends View {
                 stopTrackingPlayback();
             }
         });
-        setBarPositions();
+        setBarAndMeasurePositions();
         requestLayout();
     }
 
-    private void setBarPositions() {
-        if (player == null) barPositions = new int[0];
-        else {
-            final int barCount = player.getDuration() * beatsPerMinute / measuresPerBar / MILLIS_IN_MINUTE;
-            final int barWidth = getWidth() / barCount;
-            Log.d(LOG_TAG, "view width: " + getWidth());
-            barPositions = new int[barCount - 1];
-            int currPos = barWidth;
-            for (int i = 0; i < barCount - 1; i++) {
-                barPositions[i] = currPos;
-                currPos += barWidth;
+    private void setBarAndMeasurePositions() {
+        if (player == null) {
+            barPositions = new int[0];
+            measurePositions = new int[0];
+        } else {
+            final int measureCount = player.getDuration() * beatsPerMinute / MILLIS_IN_MINUTE;
+            final int measureWidth = getWidth() / measureCount;
+            measurePositions = new int[measureCount];
+            barPositions = new int[measureCount / measuresPerBar + 1];
+            int currPos = 0;
+            for (int i = 0; i < measureCount; i++) {
+                measurePositions[i] = currPos;
+                if (i % measuresPerBar == 0) barPositions[i / measuresPerBar] = currPos;
+                currPos += measureWidth;
             }
-            Log.d(LOG_TAG, String.format("bar count: %d, width: %d, positions: %s", barCount, barWidth, Arrays.toString(barPositions)));
+            Log.d(LOG_TAG, String.format("measure count: %d, width: %d", measureCount, measureWidth));
         }
     }
 
     public void setBeatsPerMinute(final int bpm) {
         beatsPerMinute = bpm;
-        setBarPositions();
+        setBarAndMeasurePositions();
         postInvalidate();
     }
 
     public void setMeasuresPerBar(final int mpb) {
         measuresPerBar = mpb;
-        setBarPositions();
+        setBarAndMeasurePositions();
         postInvalidate();
     }
 
@@ -181,6 +188,20 @@ public class ChoreographyView extends View {
     private void startTrackingPlayback() {
         playbackTrackingTask = new PlaybackTrackingTask();
         timer.schedule(playbackTrackingTask, 0, PLAYBACK_TRACKING_FREQ_MS);
+    }
+
+    private float getDisplayDpi() {
+        if (isInEditMode()) return 1f;
+        final DisplayMetrics metrics = new DisplayMetrics();
+        ((android.view.WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getMetrics(metrics);
+        return metrics.density;
+    }
+
+    private static Paint paint(final int colour) {
+        final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setColor(colour);
+        paint.setStyle(Paint.Style.STROKE);
+        return paint;
     }
 
     public class PlaybackTrackingTask extends TimerTask {
