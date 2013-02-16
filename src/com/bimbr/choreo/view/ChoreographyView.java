@@ -1,5 +1,9 @@
 package com.bimbr.choreo.view;
 
+import static android.content.Context.WINDOW_SERVICE;
+import static android.graphics.Paint.Style.FILL;
+import static android.graphics.Paint.Style.STROKE;
+import static com.bimbr.android.graphics.Paints.paint;
 import static java.lang.Math.max;
 
 import java.util.Timer;
@@ -11,8 +15,10 @@ import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 
 import com.bimbr.android.media.NotifyingMediaPlayer;
 import com.bimbr.android.media.NotifyingMediaPlayer.OnPausedListener;
@@ -26,6 +32,7 @@ import com.bimbr.android.media.NotifyingMediaPlayer.OnStartedListener;
 public class ChoreographyView extends View {
     private static final double  SECOND_WIDTH_CM           = 1.0f;
     private static final int     PLAYBACK_TRACKING_FREQ_MS = 25;
+    private static final int     NO_MEASURE = -1;
 
     private static final String LOG_TAG          = "ChoreoView";
 
@@ -37,24 +44,32 @@ public class ChoreographyView extends View {
 
     private final Timer timer = new Timer(true);
 
-    private static final Paint barBarPaint     = paint(0xff202020);
-    private static final Paint playBarPaint    = paint(0xff33B5E5);
-    private static final Paint measureBarPaint = paint(0xffa0a0a0);
+    private static final Paint   barBarPaint               = paint(0xff202020, STROKE);
+    private static final Paint   playBarPaint              = paint(0xff33B5E5, STROKE);
+    private static final Paint   measureBarPaint           = paint(0xffa0a0a0, STROKE);
+    private static final Paint   measureSelectionPaint     = paint(0xffc0c0c0, FILL);
 
     private final float displayDpi = getDisplayDpi();
 
+    private final GestureDetector gestureDetector = new GestureDetector(getContext(), new GestureHandler());
+
     // mutable fields
 
-    private NotifyingMediaPlayer player;
-    // bar positions and measure points are cached, based on the assumption that the view size will
-    // change infrequently relative to how often bar positions need to be checked
-    private int[]                barPositions;
-    private int[]                measurePositions;
+    // TODO: extract mutable state to a separate class?
 
-    private int                  beatsPerMinute = 120;
-    private int                  measuresPerBar = 4;
+    private NotifyingMediaPlayer  player;
+    // bar positions and measure points are cached, based on the assumption that
+    // the view size will change infrequently relative to how often bar positions
+    // need to be checked
+    private int[]                 barPositions;
+    private int[]                 measurePositions;
 
-    private TimerTask            playbackTrackingTask;
+    private int                   beatsPerMinute            = 120;
+    private int                   measuresPerBar            = 4;
+
+    private int                   selectedMeasure           = NO_MEASURE;
+
+    private TimerTask             playbackTrackingTask;
 
     public ChoreographyView(final Context context, final AttributeSet attrs) {
         super(context, attrs);
@@ -62,9 +77,16 @@ public class ChoreographyView extends View {
 
     @Override
     public void onDraw(final Canvas canvas) {
+        drawMeasureSelection(canvas);
         drawMeasureBars(canvas);
         drawBarBars(canvas);
         drawPlayBar(canvas);
+    }
+
+    private void drawMeasureSelection(final Canvas canvas) {
+        if (selectedMeasure != NO_MEASURE) {
+            canvas.drawRect(measurePositions[selectedMeasure], 0, nextMeasurePosition(selectedMeasure), getHeight(), measureSelectionPaint);
+        }
     }
 
     private void drawBarBars(final Canvas canvas) {
@@ -112,9 +134,35 @@ public class ChoreographyView extends View {
 
     @Override
     public boolean onTouchEvent(final MotionEvent event) {
-        final boolean superResult = super.onTouchEvent(event);
-        // TODO: recognise which measure was touched
-        return superResult;
+        super.onTouchEvent(event);
+        gestureDetector.onTouchEvent(event);
+        // need to return true, otherwise we will not be notified of subsequent events of the gesture;
+        // see http://stackoverflow.com/questions/12588263/in-ontouchevent-action-up-doesnt-work
+        return true;
+    }
+
+    private void deselectMeasure() {
+        final int lastSelected = selectedMeasure;
+        selectedMeasure = NO_MEASURE;
+        redrawMeasure(lastSelected);
+    }
+
+    private void selectMeasure(final int measureIndex) {
+        selectedMeasure = measureIndex;
+        redrawMeasure(selectedMeasure);
+    }
+
+    private void redrawMeasure(final int measureIndex) {
+        postInvalidate(measurePositions[measureIndex],    0,
+                       nextMeasurePosition(measureIndex), getHeight());
+    }
+
+    private int nextMeasurePosition(final int measureIndex) {
+        return measureIndex == measurePositions.length ? getWidth() : measurePositions[measureIndex + 1];
+    }
+
+    private int indexOfMeasureAt(final float x) {
+        return (int) (x / measureWidth());
     }
 
     private int audioWidth() {
@@ -152,8 +200,8 @@ public class ChoreographyView extends View {
             barPositions = new int[0];
             measurePositions = new int[0];
         } else {
-            final int measureCount = player.getDuration() * beatsPerMinute / MILLIS_IN_MINUTE;
-            final int measureWidth = getWidth() / measureCount;
+            final int measureCount = measureCount();
+            final int measureWidth = measureWidth();
             measurePositions = new int[measureCount];
             barPositions = new int[measureCount / measuresPerBar + 1];
             int currPos = 0;
@@ -164,6 +212,14 @@ public class ChoreographyView extends View {
             }
             Log.d(LOG_TAG, String.format("measure count: %d, width: %d", measureCount, measureWidth));
         }
+    }
+
+    private int measureWidth() {
+        return getWidth() / measureCount();
+    }
+
+    private int measureCount() {
+        return player.getDuration() * beatsPerMinute / MILLIS_IN_MINUTE;
     }
 
     public void setBeatsPerMinute(final int bpm) {
@@ -193,15 +249,24 @@ public class ChoreographyView extends View {
     private float getDisplayDpi() {
         if (isInEditMode()) return 1f;
         final DisplayMetrics metrics = new DisplayMetrics();
-        ((android.view.WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getMetrics(metrics);
+        ((WindowManager) getContext().getSystemService(WINDOW_SERVICE)).getDefaultDisplay().getMetrics(metrics);
         return metrics.density;
     }
 
-    private static Paint paint(final int colour) {
-        final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setColor(colour);
-        paint.setStyle(Paint.Style.STROKE);
-        return paint;
+    private final class GestureHandler extends GestureDetector.SimpleOnGestureListener {
+        @Override
+        public boolean onSingleTapUp(final MotionEvent e) {
+            if (measurePositions.length > 0) {
+                if (selectedMeasure != NO_MEASURE) deselectMeasure();
+                selectMeasure(indexOfMeasureAt(e.getX()));
+            }
+            return true;
+        }
+
+        @Override
+        public boolean onSingleTapConfirmed(final MotionEvent e) {
+            return true;
+        }
     }
 
     public class PlaybackTrackingTask extends TimerTask {

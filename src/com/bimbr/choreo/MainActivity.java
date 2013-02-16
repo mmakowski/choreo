@@ -47,7 +47,7 @@ public class MainActivity extends Activity {
         ((ChoreographyView) findViewById(R.id.choreographyView)).setMediaPlayer(player);
     }
 
-    private void startMediaPlayer(final String selectedAudioPath) {
+    private void prepareMediaPlayerFor(final String selectedAudioPath) {
         final NotifyingMediaPlayer mediaPlayer = new NotifyingMediaPlayer();
 
         mediaPlayer.setOnPreparedListener(new OnPreparedListener() {
@@ -89,7 +89,7 @@ public class MainActivity extends Activity {
             switch (requestCode) {
             case SELECT_MUSIC_REQUEST_CODE:
                 final Uri selectedAudioUri = data.getData();
-                startMediaPlayer(selectedAudioUri.toString());
+                prepareMediaPlayerFor(selectedAudioUri.toString());
                 break;
             }
         }
