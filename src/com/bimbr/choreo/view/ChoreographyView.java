@@ -2,6 +2,7 @@ package com.bimbr.choreo.view;
 
 import static java.lang.Math.max;
 
+import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -31,23 +32,30 @@ public class ChoreographyView extends View {
     private static final int    DIP              = 160;
     private static final double INCHES_PER_CM    = 0.393700787;
     private static final int    MILLIS_IN_SECOND = 1000;
+    private static final int    MILLIS_IN_MINUTE = 1000 * 60;
     private static final double DIP_PER_CM       = DIP * INCHES_PER_CM;
 
     private final Timer timer = new Timer(true);
 
-    private final Paint barBarPaint;
-    private final Paint playBarPaint;
-    private final float displayDpi;
+    private static final Paint barBarPaint = barPaint(0xff202020);
+    private static final Paint playBarPaint = barPaint(0xff33B5E5);
+
+    private final float displayDpi = getDisplayDpi();
 
     // mutable fields
+
     private NotifyingMediaPlayer player;
+    // bar positions are cached, based on the assumption that the view size will change infrequently relative to
+    // how often bar positions need to be checked
+    private int[]                barPositions;
+
+    private int                  beatsPerMinute = 120;
+    private int                  measuresPerBar = 4;
+
     private TimerTask            playbackTrackingTask;
 
     public ChoreographyView(final Context context, final AttributeSet attrs) {
         super(context, attrs);
-        barBarPaint = newBarPaint(0xff202020);
-        playBarPaint = newBarPaint(0xff33B5E5);
-        displayDpi = getDisplayDpi();
     }
 
     private float getDisplayDpi() {
@@ -57,7 +65,7 @@ public class ChoreographyView extends View {
         return metrics.density;
     }
 
-    private Paint newBarPaint(final int colour) {
+    private static Paint barPaint(final int colour) {
         final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(colour);
         paint.setStyle(Paint.Style.FILL);
@@ -83,7 +91,11 @@ public class ChoreographyView extends View {
     }
 
     private void drawBarBars(final Canvas canvas) {
-        canvas.drawLine(0, 0, getWidth(), getHeight(), barBarPaint);
+        if (player != null) {
+            for (final int pos : barPositions) {
+                canvas.drawLine(pos, 0, pos, getHeight(), barBarPaint);
+            }
+        }
     }
 
     @Override
@@ -94,6 +106,11 @@ public class ChoreographyView extends View {
         final int h = resolveSizeAndState(minh, heightMeasureSpec, 0);
         Log.d(LOG_TAG, String.format("calculated w=%d, h=%d", w, h));
         setMeasuredDimension(w, h);
+    }
+
+    @Override
+    protected void onSizeChanged(final int w, final int h, final int oldw, final int oldh) {
+        setBarPositions();
     }
 
     private int audioWidth() {
@@ -122,7 +139,36 @@ public class ChoreographyView extends View {
                 stopTrackingPlayback();
             }
         });
+        setBarPositions();
         requestLayout();
+    }
+
+    private void setBarPositions() {
+        if (player == null) barPositions = new int[0];
+        else {
+            final int barCount = player.getDuration() * beatsPerMinute / measuresPerBar / MILLIS_IN_MINUTE;
+            final int barWidth = getWidth() / barCount;
+            Log.d(LOG_TAG, "view width: " + getWidth());
+            barPositions = new int[barCount - 1];
+            int currPos = barWidth;
+            for (int i = 0; i < barCount - 1; i++) {
+                barPositions[i] = currPos;
+                currPos += barWidth;
+            }
+            Log.d(LOG_TAG, String.format("bar count: %d, width: %d, positions: %s", barCount, barWidth, Arrays.toString(barPositions)));
+        }
+    }
+
+    public void setBeatsPerMinute(final int bpm) {
+        beatsPerMinute = bpm;
+        setBarPositions();
+        postInvalidate();
+    }
+
+    public void setMeasuresPerBar(final int mpb) {
+        measuresPerBar = mpb;
+        setBarPositions();
+        postInvalidate();
     }
 
     private void stopTrackingPlayback() {
