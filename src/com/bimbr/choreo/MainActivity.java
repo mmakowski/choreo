@@ -10,12 +10,14 @@ import android.media.MediaPlayer.OnPreparedListener;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.widget.MediaController;
 import android.widget.MediaController.MediaPlayerControl;
-import android.widget.ScrollView;
+
+import com.bimbr.choreo.view.ChoreographyView;
 
 public class MainActivity extends Activity {
     private static final int SELECT_MUSIC_REQUEST_CODE = 1;
@@ -28,7 +30,7 @@ public class MainActivity extends Activity {
     }
 
     private void startMediaPlayer(final String selectedAudioPath) {
-        final ScrollView choreoView = (ScrollView) findViewById(R.id.choreoView);
+        final ChoreographyView choreographyView = (ChoreographyView) findViewById(R.id.choreographyView);
 
         final MediaController mediaController = new MediaController(this);
         final MediaPlayer mediaPlayer = new MediaPlayer();
@@ -37,16 +39,14 @@ public class MainActivity extends Activity {
             @Override
             public void onPrepared(final MediaPlayer player) {
                 mediaController.setMediaPlayer(new ForwardingMediaPlayerControl(player));
-                mediaController.setAnchorView(choreoView);
-                mediaController.setEnabled(true);
-                mediaController.show(0);
-                //                new Handler().post(new Runnable() {
-                //                    @Override
-                //                    public void run() {
-                //                        mediaController.setEnabled(true);
-                //                        mediaController.show();
-                //                    }
-                //                });
+                mediaController.setAnchorView(choreographyView);
+                new Handler().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mediaController.setEnabled(true);
+                        mediaController.show();
+                    }
+                });
             }});
 
         try {
