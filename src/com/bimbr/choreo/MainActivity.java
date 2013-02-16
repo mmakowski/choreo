@@ -10,14 +10,11 @@ import android.media.MediaPlayer.OnPreparedListener;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
-import android.widget.MediaController;
-import android.widget.MediaController.MediaPlayerControl;
-
-import com.bimbr.choreo.view.ChoreographyView;
+import android.view.View;
+import android.widget.Button;
 
 public class MainActivity extends Activity {
     private static final int SELECT_MUSIC_REQUEST_CODE = 1;
@@ -29,24 +26,23 @@ public class MainActivity extends Activity {
         promptForMusic();
     }
 
-    private void startMediaPlayer(final String selectedAudioPath) {
-        final ChoreographyView choreographyView = (ChoreographyView) findViewById(R.id.choreographyView);
+    private void setControlledMediaPlayer(final MediaPlayer player) {
+        final Button button = (Button) findViewById(R.id.playPause);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(final View v) {
+                if (player.isPlaying()) player.pause(); else player.start();
+            }
+        });
+    }
 
-        final MediaController mediaController = new MediaController(this);
+    private void startMediaPlayer(final String selectedAudioPath) {
         final MediaPlayer mediaPlayer = new MediaPlayer();
 
         mediaPlayer.setOnPreparedListener(new OnPreparedListener() {
             @Override
             public void onPrepared(final MediaPlayer player) {
-                mediaController.setMediaPlayer(new ForwardingMediaPlayerControl(player));
-                mediaController.setAnchorView(choreographyView);
-                new Handler().post(new Runnable() {
-                    @Override
-                    public void run() {
-                        mediaController.setEnabled(true);
-                        mediaController.show();
-                    }
-                });
+                setControlledMediaPlayer(player);
             }});
 
         try {
@@ -55,6 +51,7 @@ public class MainActivity extends Activity {
             Log.d("AudioPlayer", "prepared " + selectedAudioPath);
         } catch (final IOException e) {
             Log.e("AudioPlayer", "Could not open file " + selectedAudioPath + " for playback.", e);
+            // TODO: report to user
         }
     }
 
@@ -109,64 +106,5 @@ public class MainActivity extends Activity {
         }
 
         return selectedAudioPath;
-    }
-
-    private static final class ForwardingMediaPlayerControl implements MediaPlayerControl {
-        private final MediaPlayer player;
-
-        private ForwardingMediaPlayerControl(final MediaPlayer player) {
-            this.player = player;
-        }
-
-        @Override
-        public void start() {
-            player.start();
-        }
-
-        @Override
-        public void pause() {
-            player.pause();
-        }
-
-        @Override
-        public int getDuration() {
-            return player.getDuration();
-        }
-
-        @Override
-        public int getCurrentPosition() {
-            return player.getCurrentPosition();
-        }
-
-        @Override
-        public void seekTo(final int pos) {
-            player.seekTo(pos);
-
-        }
-
-        @Override
-        public boolean isPlaying() {
-            return player.isPlaying();
-        }
-
-        @Override
-        public int getBufferPercentage() {
-            return 100;
-        }
-
-        @Override
-        public boolean canPause() {
-            return true;
-        }
-
-        @Override
-        public boolean canSeekBackward() {
-            return false;
-        }
-
-        @Override
-        public boolean canSeekForward() {
-            return false;
-        }
     }
 }
