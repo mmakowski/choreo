@@ -1,5 +1,10 @@
 package com.bimbr.choreo;
 
+import static android.content.Intent.ACTION_GET_CONTENT;
+import static android.content.Intent.CATEGORY_OPENABLE;
+import static android.content.Intent.createChooser;
+import static android.os.Environment.getExternalStorageDirectory;
+
 import java.io.IOException;
 
 import android.app.Activity;
@@ -8,14 +13,19 @@ import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
 
+import com.bimbr.android.media.NotifyingMediaPlayer;
 import com.bimbr.choreo.view.ChoreographyView;
 
+/**
+ * Editing choreography.
+ * 
+ * @author mmakowski
+ */
 public class MainActivity extends Activity {
     private static final int SELECT_MUSIC_REQUEST_CODE = 1;
 
@@ -26,7 +36,7 @@ public class MainActivity extends Activity {
         promptForMusic();
     }
 
-    private void setControlledMediaPlayer(final MediaPlayer player) {
+    private void setControlledMediaPlayer(final NotifyingMediaPlayer player) {
         final Button button = (Button) findViewById(R.id.playPause);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -38,12 +48,12 @@ public class MainActivity extends Activity {
     }
 
     private void startMediaPlayer(final String selectedAudioPath) {
-        final MediaPlayer mediaPlayer = new MediaPlayer();
+        final NotifyingMediaPlayer mediaPlayer = new NotifyingMediaPlayer();
 
         mediaPlayer.setOnPreparedListener(new OnPreparedListener() {
             @Override
             public void onPrepared(final MediaPlayer player) {
-                setControlledMediaPlayer(player);
+                setControlledMediaPlayer(mediaPlayer);
             }});
 
         try {
@@ -57,12 +67,12 @@ public class MainActivity extends Activity {
     }
 
     private void promptForMusic() {
-        final String path = Environment.getExternalStorageDirectory().getAbsolutePath();
+        final String path = getExternalStorageDirectory().getAbsolutePath();
         final Intent musicSelection = new Intent(path);
         musicSelection.setType("audio/mp3");
-        musicSelection.setAction(Intent.ACTION_GET_CONTENT);
-        musicSelection.addCategory(Intent.CATEGORY_OPENABLE);
-        startActivityForResult(Intent.createChooser(musicSelection, "select music"), SELECT_MUSIC_REQUEST_CODE);
+        musicSelection.setAction(ACTION_GET_CONTENT);
+        musicSelection.addCategory(CATEGORY_OPENABLE);
+        startActivityForResult(createChooser(musicSelection, "select music"), SELECT_MUSIC_REQUEST_CODE);
     }
 
     @Override
