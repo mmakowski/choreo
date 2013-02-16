@@ -4,17 +4,17 @@ import java.io.IOException;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.database.Cursor;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
+
+import com.bimbr.choreo.view.ChoreographyView;
 
 public class MainActivity extends Activity {
     private static final int SELECT_MUSIC_REQUEST_CODE = 1;
@@ -34,6 +34,7 @@ public class MainActivity extends Activity {
                 if (player.isPlaying()) player.pause(); else player.start();
             }
         });
+        ((ChoreographyView) findViewById(R.id.choreographyView)).setMediaPlayer(player);
     }
 
     private void startMediaPlayer(final String selectedAudioPath) {
@@ -77,34 +78,9 @@ public class MainActivity extends Activity {
             switch (requestCode) {
             case SELECT_MUSIC_REQUEST_CODE:
                 final Uri selectedAudioUri = data.getData();
-                final String selectedAudioPath = getPathAudio(selectedAudioUri);
-                startMediaPlayer(selectedAudioPath);
+                startMediaPlayer(selectedAudioUri.toString());
                 break;
             }
         }
-    }
-
-    private String getPathAudio(final Uri uriAudio) {
-        // String selectedImagePath;
-        // 1:MEDIA GALLERY --- query from MediaStore.Images.Media.DATA
-        String selectedAudioPath = "";
-        final String[] projection = { MediaStore.Audio.Media.DATA };
-
-        final Cursor cursor = managedQuery(uriAudio, projection, null, null, null);
-
-        if (cursor != null) {
-            final int column_index = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
-            cursor.moveToFirst();
-            selectedAudioPath = cursor.getString(column_index);
-
-        } else {
-            selectedAudioPath = null;
-        }
-
-        if (selectedAudioPath == null) {
-            selectedAudioPath = uriAudio.getPath();
-        }
-
-        return selectedAudioPath;
     }
 }
