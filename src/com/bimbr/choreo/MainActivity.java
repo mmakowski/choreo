@@ -22,6 +22,8 @@ import android.view.View;
 import android.widget.Button;
 
 import com.bimbr.android.media.NotifyingMediaPlayer;
+import com.bimbr.choreo.model.Choreography;
+import com.bimbr.choreo.model.Move;
 import com.bimbr.choreo.view.ChoreographyView;
 import com.bimbr.choreo.view.ChoreographyView.OnAddMoveListener;
 
@@ -33,6 +35,8 @@ import com.bimbr.choreo.view.ChoreographyView.OnAddMoveListener;
 public class MainActivity extends Activity {
     private static final int SELECT_MUSIC_REQUEST_CODE = 1;
     private static final String LOG_TAG = "NewChoreo";
+
+    private Choreography choreography;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -49,6 +53,7 @@ public class MainActivity extends Activity {
                 if (player.isPlaying()) player.pause(); else player.start();
             }
         });
+        // TODO: set choreography document instead and make playback tracking work through listeners on notifying media player
         choreographyView().setMediaPlayer(player);
     }
 
@@ -59,6 +64,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPrepared(final MediaPlayer player) {
                 setControlledMediaPlayer(mediaPlayer);
+                createChoreography(mediaPlayer);
             }});
 
         try {
@@ -69,6 +75,11 @@ public class MainActivity extends Activity {
             Log.e("AudioPlayer", "Could not open file " + selectedAudioPath + " for playback.", e);
             // TODO: report to user
         }
+    }
+
+    private void createChoreography(final NotifyingMediaPlayer mediaPlayer) {
+        choreography = new Choreography(mediaPlayer.getDuration());
+        choreographyView().setChoreography(choreography);
     }
 
     private void promptForMusic() {
@@ -122,7 +133,7 @@ public class MainActivity extends Activity {
                .setItems(items, new DialogInterface.OnClickListener() {
                    @Override
                    public void onClick(final DialogInterface dialog, final int which) {
-                       // TODO: update model
+                       choreography.addMove(measureIndex, new Move(items[which].substring(0, 1)));
                        // TODO: make this callback part of Choreography
                        choreographyView().onMoveAdded(measureIndex);
                    }
