@@ -71,7 +71,7 @@ public class ChoreographyView extends View {
     private static final Paint barBarPaint           = paint(0xff202020, STROKE);
     private static final Paint playBarPaint          = paint(0xff33B5E5, STROKE);
     private static final Paint measureBarPaint       = paint(0xffa0a0a0, STROKE);
-    private static final Paint measureSelectionPaint = paint(0xffe0e0e0, FILL);
+    private static final Paint measureSelectionPaint = paint(0xfff0f0f0, FILL);
     private static final Paint moveSymbolPaint       = textPaint(0xff000000, MOVE_SYMBOL_SIZE_PX);
 
     @Override
@@ -178,12 +178,6 @@ public class ChoreographyView extends View {
     private void selectMeasure(final int measureIndex) {
         selectedMeasure = measureIndex;
         redrawMeasure(selectedMeasure);
-    }
-
-    // -- reacting to model changes -----
-
-    public void onMoveAdded(final int measureIndex) {
-        redrawMeasure(measureIndex);
     }
 
     // -- state modification ------------

@@ -134,8 +134,6 @@ public class MainActivity extends Activity {
                    @Override
                    public void onClick(final DialogInterface dialog, final int which) {
                        choreography.addMove(measureIndex, new Move(items[which].substring(0, 1)));
-                       // TODO: make this callback part of Choreography
-                       choreographyView().onMoveAdded(measureIndex);
                    }
                });
         return builder.create();
