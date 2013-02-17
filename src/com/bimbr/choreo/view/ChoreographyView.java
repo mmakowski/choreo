@@ -26,13 +26,14 @@ import com.bimbr.android.media.NotifyingMediaPlayer.OnStartedListener;
 
 /**
  * A view that displays the choreography chart.
- * 
+ *
  * @author mmakowski
  */
 public class ChoreographyView extends View {
     private static final double  SECOND_WIDTH_CM           = 1.0f;
     private static final int     PLAYBACK_TRACKING_FREQ_MS = 25;
-    private static final int     NO_MEASURE = -1;
+
+    private static final int     NO_MEASURE                = -1;
 
     private static final String LOG_TAG          = "ChoreoView";
 
@@ -41,11 +42,6 @@ public class ChoreographyView extends View {
     private static final int    MILLIS_IN_SECOND = 1000;
     private static final int    MILLIS_IN_MINUTE = 1000 * 60;
     private static final double DIP_PER_CM       = DIP * INCHES_PER_CM;
-
-    private static final Paint   barBarPaint               = paint(0xff202020, STROKE);
-    private static final Paint   playBarPaint              = paint(0xff33B5E5, STROKE);
-    private static final Paint   measureBarPaint           = paint(0xffa0a0a0, STROKE);
-    private static final Paint   measureSelectionPaint     = paint(0xffc0c0c0, FILL);
 
     private final float displayDpi = getDisplayDpi();
 
@@ -56,9 +52,7 @@ public class ChoreographyView extends View {
     // TODO: extract mutable state to a separate class?
 
     private NotifyingMediaPlayer  player;
-    // bar positions and measure points are cached, based on the assumption that
-    // the view size will change infrequently relative to how often bar positions
-    // need to be checked
+
     private int[]                 barPositions;
     private int[]                 measurePositions;
 
@@ -74,6 +68,11 @@ public class ChoreographyView extends View {
     }
 
     // -- drawing ------------------------
+
+    private static final Paint   barBarPaint               = paint(0xff202020, STROKE);
+    private static final Paint   playBarPaint              = paint(0xff33B5E5, STROKE);
+    private static final Paint   measureBarPaint           = paint(0xffa0a0a0, STROKE);
+    private static final Paint   measureSelectionPaint     = paint(0xffe0e0e0, FILL);
 
     @Override
     public void onDraw(final Canvas canvas) {
@@ -132,16 +131,26 @@ public class ChoreographyView extends View {
         @Override
         public boolean onSingleTapUp(final MotionEvent e) {
             if (measurePositions.length > 0) {
-                if (selectedMeasure != NO_MEASURE) deselectMeasure();
-                selectMeasure(indexOfMeasureAt(e.getX()));
+                final int tappedMeasure = indexOfMeasureAt(e.getX());
+                if (selectedMeasure != NO_MEASURE) {
+                    if (tappedMeasure == selectedMeasure) addMove();
+                    else changeMeasureSelectionTo(tappedMeasure);
+                } else {
+                    selectMeasure(tappedMeasure);
+                }
             }
             return true;
         }
 
-        @Override
-        public boolean onSingleTapConfirmed(final MotionEvent e) {
-            return true;
-        }
+    }
+
+    private void changeMeasureSelectionTo(final int tappedMeasure) {
+        deselectMeasure();
+        selectMeasure(tappedMeasure);
+    }
+
+    private void addMove() {
+        if (addMoveListener != null) addMoveListener.onAddMove(selectedMeasure);
     }
 
     private void deselectMeasure() {
@@ -153,6 +162,13 @@ public class ChoreographyView extends View {
     private void selectMeasure(final int measureIndex) {
         selectedMeasure = measureIndex;
         redrawMeasure(selectedMeasure);
+    }
+
+    // -- reacting to model changes -----
+
+    public void onMoveAdded(final int measureIndex) {
+        Log.d(LOG_TAG, "move added to measure " + measureIndex);
+        redrawMeasure(measureIndex);
     }
 
     // -- state modification ------------
@@ -188,6 +204,8 @@ public class ChoreographyView extends View {
     }
 
     // -- playback tracking -------------
+
+    // TODO: make this a part of NotifyingMediaPlayer
 
     private final Timer timer = new Timer(true);
 
@@ -247,7 +265,7 @@ public class ChoreographyView extends View {
                 if (i % measuresPerBar == 0) barPositions[i / measuresPerBar] = currPos;
                 currPos += measureWidth;
             }
-            Log.d(LOG_TAG, String.format("measure count: %d, width: %d", measureCount, measureWidth));
+            Log.d(LOG_TAG, String.format("positions set; measure count: %d, width: %d", measureCount, measureWidth));
         }
     }
 
@@ -286,13 +304,18 @@ public class ChoreographyView extends View {
         return metrics.density;
     }
 
-    // -- listener interfaces -------------------
+    // -- events --------------------------------
+
+    private OnAddMoveListener addMoveListener;
+
+    public void setOnAddMoveListener(final OnAddMoveListener addMoveListener) {
+        this.addMoveListener = addMoveListener;
+    }
 
     public interface OnAddMoveListener {
         /**
          * @param measureIndex index of measure to which move is to be added
-         * @return {@code true} if move was added, {@code false} otherwise
          */
-        boolean onAddMove(int measureIndex);
+        void onAddMove(int measureIndex);
     }
 }

@@ -8,6 +8,9 @@ import static android.os.Environment.getExternalStorageDirectory;
 import java.io.IOException;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnPreparedListener;
@@ -20,14 +23,16 @@ import android.widget.Button;
 
 import com.bimbr.android.media.NotifyingMediaPlayer;
 import com.bimbr.choreo.view.ChoreographyView;
+import com.bimbr.choreo.view.ChoreographyView.OnAddMoveListener;
 
 /**
  * Editing choreography.
- * 
+ *
  * @author mmakowski
  */
 public class MainActivity extends Activity {
     private static final int SELECT_MUSIC_REQUEST_CODE = 1;
+    private static final String LOG_TAG = "NewChoreo";
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -37,14 +42,14 @@ public class MainActivity extends Activity {
     }
 
     private void setControlledMediaPlayer(final NotifyingMediaPlayer player) {
-        final Button button = (Button) findViewById(R.id.playPause);
-        button.setOnClickListener(new View.OnClickListener() {
+        final Button playPauseButton = (Button) findViewById(R.id.playPause);
+        playPauseButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(final View v) {
                 if (player.isPlaying()) player.pause(); else player.start();
             }
         });
-        ((ChoreographyView) findViewById(R.id.choreographyView)).setMediaPlayer(player);
+        choreographyView().setMediaPlayer(player);
     }
 
     private void prepareMediaPlayerFor(final String selectedAudioPath) {
@@ -72,7 +77,7 @@ public class MainActivity extends Activity {
         musicSelection.setType("audio/mp3");
         musicSelection.setAction(ACTION_GET_CONTENT);
         musicSelection.addCategory(CATEGORY_OPENABLE);
-        startActivityForResult(createChooser(musicSelection, "select music"), SELECT_MUSIC_REQUEST_CODE);
+        startActivityForResult(createChooser(musicSelection, "Select music"), SELECT_MUSIC_REQUEST_CODE);
     }
 
     @Override
@@ -88,10 +93,40 @@ public class MainActivity extends Activity {
         if (resultCode == RESULT_OK) {
             switch (requestCode) {
             case SELECT_MUSIC_REQUEST_CODE:
-                final Uri selectedAudioUri = data.getData();
-                prepareMediaPlayerFor(selectedAudioUri.toString());
+                onMusicSelected(data);
                 break;
             }
         }
+    }
+
+    private void onMusicSelected(final Intent selectionResult) {
+        final Uri selectedAudioUri = selectionResult.getData();
+        prepareMediaPlayerFor(selectedAudioUri.toString());
+        // TODO: more appropriate place for this
+        final ChoreographyView choreoView = choreographyView();
+        choreoView.setOnAddMoveListener(new OnAddMoveListener(){
+            @Override
+            public void onAddMove(final int measureIndex) {
+                movePickerDialog(measureIndex).show();
+            }});
+    }
+
+    private ChoreographyView choreographyView() {
+        return (ChoreographyView) findViewById(R.id.choreographyView);
+    }
+
+    private Dialog movePickerDialog(final int measureIndex) {
+        final String[] items = {"jump", "spin"};
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select move")
+               .setItems(items, new DialogInterface.OnClickListener() {
+                   @Override
+                   public void onClick(final DialogInterface dialog, final int which) {
+                       // TODO: update model
+                       // TODO: make this callback part of Choreography
+                       choreographyView().onMoveAdded(measureIndex);
+                   }
+               });
+        return builder.create();
     }
 }
