@@ -42,8 +42,6 @@ public class ChoreographyView extends View {
     private static final int    MILLIS_IN_MINUTE = 1000 * 60;
     private static final double DIP_PER_CM       = DIP * INCHES_PER_CM;
 
-    private final Timer timer = new Timer(true);
-
     private static final Paint   barBarPaint               = paint(0xff202020, STROKE);
     private static final Paint   playBarPaint              = paint(0xff33B5E5, STROKE);
     private static final Paint   measureBarPaint           = paint(0xffa0a0a0, STROKE);
@@ -74,6 +72,8 @@ public class ChoreographyView extends View {
     public ChoreographyView(final Context context, final AttributeSet attrs) {
         super(context, attrs);
     }
+
+    // -- drawing ------------------------
 
     @Override
     public void onDraw(final Canvas canvas) {
@@ -112,25 +112,12 @@ public class ChoreographyView extends View {
         }
     }
 
-    private int playBarPosition() {
-        assert player != null;
-        return msToX(player.getCurrentPosition());
+    private void redrawMeasure(final int measureIndex) {
+        postInvalidate(measurePositions[measureIndex],    0,
+                       nextMeasurePosition(measureIndex), getHeight());
     }
 
-    @Override
-    protected void onMeasure(final int widthMeasureSpec, final int heightMeasureSpec) {
-        final int minw = getPaddingLeft() + getPaddingRight() + max(getSuggestedMinimumWidth(), audioWidth()) ;
-        final int w = resolveSizeAndState(minw, widthMeasureSpec, 1);
-        final int minh = getPaddingBottom() + getPaddingTop() + getSuggestedMinimumHeight();
-        final int h = resolveSizeAndState(minh, heightMeasureSpec, 0);
-        Log.d(LOG_TAG, String.format("calculated w=%d, h=%d", w, h));
-        setMeasuredDimension(w, h);
-    }
-
-    @Override
-    protected void onSizeChanged(final int w, final int h, final int oldw, final int oldh) {
-        setBarAndMeasurePositions();
-    }
+    // -- reacting to user input --------
 
     @Override
     public boolean onTouchEvent(final MotionEvent event) {
@@ -139,6 +126,22 @@ public class ChoreographyView extends View {
         // need to return true, otherwise we will not be notified of subsequent events of the gesture;
         // see http://stackoverflow.com/questions/12588263/in-ontouchevent-action-up-doesnt-work
         return true;
+    }
+
+    private final class GestureHandler extends GestureDetector.SimpleOnGestureListener {
+        @Override
+        public boolean onSingleTapUp(final MotionEvent e) {
+            if (measurePositions.length > 0) {
+                if (selectedMeasure != NO_MEASURE) deselectMeasure();
+                selectMeasure(indexOfMeasureAt(e.getX()));
+            }
+            return true;
+        }
+
+        @Override
+        public boolean onSingleTapConfirmed(final MotionEvent e) {
+            return true;
+        }
     }
 
     private void deselectMeasure() {
@@ -152,30 +155,7 @@ public class ChoreographyView extends View {
         redrawMeasure(selectedMeasure);
     }
 
-    private void redrawMeasure(final int measureIndex) {
-        postInvalidate(measurePositions[measureIndex],    0,
-                       nextMeasurePosition(measureIndex), getHeight());
-    }
-
-    private int nextMeasurePosition(final int measureIndex) {
-        return measureIndex == measurePositions.length ? getWidth() : measurePositions[measureIndex + 1];
-    }
-
-    private int indexOfMeasureAt(final float x) {
-        return (int) (x / measureWidth());
-    }
-
-    private int audioWidth() {
-        return player == null ? 0 : msToX(player.getDuration());
-    }
-
-    private int msToX(final int ms) {
-        return ms * cmToPixels(SECOND_WIDTH_CM) / MILLIS_IN_SECOND;
-    }
-
-    private int cmToPixels(final double sizeInCm) {
-        return (int) (sizeInCm * DIP_PER_CM * displayDpi);
-    }
+    // -- state modification ------------
 
     public void setMediaPlayer(final NotifyingMediaPlayer player) {
         this.player = player;
@@ -193,6 +173,63 @@ public class ChoreographyView extends View {
         });
         setBarAndMeasurePositions();
         requestLayout();
+    }
+
+    public void setBeatsPerMinute(final int bpm) {
+        beatsPerMinute = bpm;
+        setBarAndMeasurePositions();
+        postInvalidate();
+    }
+
+    public void setMeasuresPerBar(final int mpb) {
+        measuresPerBar = mpb;
+        setBarAndMeasurePositions();
+        postInvalidate();
+    }
+
+    // -- playback tracking -------------
+
+    private final Timer timer = new Timer(true);
+
+    private void stopTrackingPlayback() {
+        if (playbackTrackingTask != null) {
+            playbackTrackingTask.cancel();
+            playbackTrackingTask = null;
+        }
+    }
+
+    private void startTrackingPlayback() {
+        playbackTrackingTask = new PlaybackTrackingTask();
+        timer.schedule(playbackTrackingTask, 0, PLAYBACK_TRACKING_FREQ_MS);
+    }
+
+    private final class PlaybackTrackingTask extends TimerTask {
+        @Override
+        public void run() {
+            // TODO: restricted invalidation for better performance
+            postInvalidate();
+        }
+    }
+
+    // -- postion calculation -----------
+
+    @Override
+    protected void onSizeChanged(final int w, final int h, final int oldw, final int oldh) {
+        setBarAndMeasurePositions();
+    }
+
+    @Override
+    protected void onMeasure(final int widthMeasureSpec, final int heightMeasureSpec) {
+        final int minw = getPaddingLeft() + getPaddingRight() + max(getSuggestedMinimumWidth(), audioWidth()) ;
+        final int w = resolveSizeAndState(minw, widthMeasureSpec, 1);
+        final int minh = getPaddingBottom() + getPaddingTop() + getSuggestedMinimumHeight();
+        final int h = resolveSizeAndState(minh, heightMeasureSpec, 0);
+        setMeasuredDimension(w, h);
+    }
+
+    private int playBarPosition() {
+        assert player != null;
+        return msToX(player.getCurrentPosition());
     }
 
     private void setBarAndMeasurePositions() {
@@ -218,32 +255,28 @@ public class ChoreographyView extends View {
         return getWidth() / measureCount();
     }
 
+    private int nextMeasurePosition(final int measureIndex) {
+        return measureIndex == measurePositions.length ? getWidth() : measurePositions[measureIndex + 1];
+    }
+
+    private int indexOfMeasureAt(final float x) {
+        return (int) (x / measureWidth());
+    }
+
     private int measureCount() {
         return player.getDuration() * beatsPerMinute / MILLIS_IN_MINUTE;
     }
 
-    public void setBeatsPerMinute(final int bpm) {
-        beatsPerMinute = bpm;
-        setBarAndMeasurePositions();
-        postInvalidate();
+    private int audioWidth() {
+        return player == null ? 0 : msToX(player.getDuration());
     }
 
-    public void setMeasuresPerBar(final int mpb) {
-        measuresPerBar = mpb;
-        setBarAndMeasurePositions();
-        postInvalidate();
+    private int msToX(final int ms) {
+        return ms * cmToPixels(SECOND_WIDTH_CM) / MILLIS_IN_SECOND;
     }
 
-    private void stopTrackingPlayback() {
-        if (playbackTrackingTask != null) {
-            playbackTrackingTask.cancel();
-            playbackTrackingTask = null;
-        }
-    }
-
-    private void startTrackingPlayback() {
-        playbackTrackingTask = new PlaybackTrackingTask();
-        timer.schedule(playbackTrackingTask, 0, PLAYBACK_TRACKING_FREQ_MS);
+    private int cmToPixels(final double sizeInCm) {
+        return (int) (sizeInCm * DIP_PER_CM * displayDpi);
     }
 
     private float getDisplayDpi() {
@@ -253,27 +286,13 @@ public class ChoreographyView extends View {
         return metrics.density;
     }
 
-    private final class GestureHandler extends GestureDetector.SimpleOnGestureListener {
-        @Override
-        public boolean onSingleTapUp(final MotionEvent e) {
-            if (measurePositions.length > 0) {
-                if (selectedMeasure != NO_MEASURE) deselectMeasure();
-                selectMeasure(indexOfMeasureAt(e.getX()));
-            }
-            return true;
-        }
+    // -- listener interfaces -------------------
 
-        @Override
-        public boolean onSingleTapConfirmed(final MotionEvent e) {
-            return true;
-        }
-    }
-
-    public class PlaybackTrackingTask extends TimerTask {
-        @Override
-        public void run() {
-            // TODO: restricted invalidation for better performance
-            postInvalidate();
-        }
+    public interface OnAddMoveListener {
+        /**
+         * @param measureIndex index of measure to which move is to be added
+         * @return {@code true} if move was added, {@code false} otherwise
+         */
+        boolean onAddMove(int measureIndex);
     }
 }
