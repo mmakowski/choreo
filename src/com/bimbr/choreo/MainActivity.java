@@ -4,6 +4,7 @@ import static android.content.Intent.ACTION_GET_CONTENT;
 import static android.content.Intent.CATEGORY_OPENABLE;
 import static android.content.Intent.createChooser;
 import static android.os.Environment.getExternalStorageDirectory;
+import static com.google.common.collect.Iterables.toArray;
 
 import java.io.IOException;
 
@@ -23,6 +24,7 @@ import android.widget.Button;
 
 import com.bimbr.android.media.NotifyingMediaPlayer;
 import com.bimbr.choreo.model.Choreography;
+import com.bimbr.choreo.model.Dictionary;
 import com.bimbr.choreo.model.Move;
 import com.bimbr.choreo.view.ChoreographyView;
 import com.bimbr.choreo.view.ChoreographyView.OnAddMoveListener;
@@ -127,13 +129,22 @@ public class MainActivity extends Activity {
     }
 
     private Dialog movePickerDialog(final int measureIndex) {
-        final String[] items = {"jump", "spin"};
+        // TODO: read dictionary once when choreography is created
+        final Dictionary dict;
+        try {
+            dict = Dictionary.fromInputStream(getAssets().openFd("dictionary.txt").createInputStream());
+        } catch (final IOException e) {
+            Log.e(LOG_TAG, "can't open dictionary", e);
+            return new AlertDialog.Builder(this).setMessage("can't open dictionary").create();
+        }
+
+        final String[] items = toArray(dict.allMoveNames(), String.class);
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Select move")
                .setItems(items, new DialogInterface.OnClickListener() {
                    @Override
                    public void onClick(final DialogInterface dialog, final int which) {
-                       choreography.addMove(measureIndex, new Move(items[which].substring(0, 1)));
+                       choreography.addMove(measureIndex, new Move(dict.symbolFor(items[which])));
                    }
                });
         return builder.create();
