@@ -1,4 +1,4 @@
-package com.bimbr.choreo;
+package com.bimbr.choreo.activities;
 
 import static android.content.Intent.ACTION_GET_CONTENT;
 import static android.content.Intent.CATEGORY_OPENABLE;
@@ -29,6 +29,7 @@ import android.view.View;
 import android.widget.Button;
 
 import com.bimbr.android.media.NotifyingMediaPlayer;
+import com.bimbr.choreo.R;
 import com.bimbr.choreo.model.Choreography;
 import com.bimbr.choreo.model.Dictionary;
 import com.bimbr.choreo.model.Move;
@@ -41,7 +42,7 @@ import com.bimbr.choreo.view.ChoreographyView.OnAddMoveListener;
  *
  * @author mmakowski
  */
-public class MainActivity extends Activity {
+public class EditChoreography extends Activity {
     private static final int SELECT_MUSIC_REQUEST_CODE = 1;
     private static final String LOG_TAG = "NewChoreo";
 
@@ -50,7 +51,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.edit_choreography);
         promptForMusic();
     }
 
@@ -133,7 +134,7 @@ public class MainActivity extends Activity {
     public boolean onCreateOptionsMenu(final Menu menu) {
         super.onCreateOptionsMenu(menu);
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.activity_main, menu);
+        getMenuInflater().inflate(R.menu.edit_choreography, menu);
         return true;
     }
 
