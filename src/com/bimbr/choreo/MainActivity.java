@@ -3,9 +3,14 @@ package com.bimbr.choreo;
 import static android.content.Intent.ACTION_GET_CONTENT;
 import static android.content.Intent.CATEGORY_OPENABLE;
 import static android.content.Intent.createChooser;
+import static android.os.Environment.MEDIA_MOUNTED;
 import static android.os.Environment.getExternalStorageDirectory;
+import static android.os.Environment.getExternalStorageState;
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Iterables.toArray;
+import static com.google.common.io.Files.write;
 
+import java.io.File;
 import java.io.IOException;
 
 import android.app.Activity;
@@ -17,6 +22,7 @@ import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -26,6 +32,7 @@ import com.bimbr.android.media.NotifyingMediaPlayer;
 import com.bimbr.choreo.model.Choreography;
 import com.bimbr.choreo.model.Dictionary;
 import com.bimbr.choreo.model.Move;
+import com.bimbr.choreo.model.json.ChoreographyJsonConverter;
 import com.bimbr.choreo.view.ChoreographyView;
 import com.bimbr.choreo.view.ChoreographyView.OnAddMoveListener;
 
@@ -81,7 +88,36 @@ public class MainActivity extends Activity {
 
     private void createChoreography(final NotifyingMediaPlayer mediaPlayer) {
         choreography = new Choreography(mediaPlayer.getDuration());
+        // TODO: this is here just for a test, move elsewhere
+        writeChoreography(new ChoreographyJsonConverter().toJson(choreography));
+
         choreographyView().setChoreography(choreography);
+    }
+
+    private void writeChoreography(final String json) {
+        if (sdCardIsWriteable()) {
+            final File dir = new File(Environment.getExternalStorageDirectory(), "Choreo");
+            if (!dir.exists()) {
+                if (!dir.mkdirs()) {
+                    // TODO: aler the user
+                    Log.e(LOG_TAG, "unable to create directory " + dir.getAbsolutePath());
+                }
+            }
+            final File file = new File(dir, "test.choreo");
+            try {
+                write(json, file, UTF_8);
+            } catch (final IOException e) {
+                // TODO: aler the user
+                Log.e(LOG_TAG, "save failed", e);
+            }
+        } else {
+            // TODO: alert the user
+            Log.e(LOG_TAG, "SD card is unavailable");
+        }
+    }
+
+    private boolean sdCardIsWriteable() {
+        return MEDIA_MOUNTED.equals(getExternalStorageState());
     }
 
     private void promptForMusic() {
