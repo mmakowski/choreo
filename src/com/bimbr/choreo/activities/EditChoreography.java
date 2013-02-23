@@ -55,6 +55,12 @@ public class EditChoreography extends Activity {
         promptForMusic();
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (choreography != null) writeChoreography();
+    }
+
     private void setControlledMediaPlayer(final NotifyingMediaPlayer player) {
         final Button playPauseButton = (Button) findViewById(R.id.playPause);
         playPauseButton.setOnClickListener(new View.OnClickListener() {
@@ -89,10 +95,11 @@ public class EditChoreography extends Activity {
 
     private void createChoreography(final NotifyingMediaPlayer mediaPlayer) {
         choreography = new Choreography(mediaPlayer.getDuration());
-        // TODO: this is here just for a test, move elsewhere
-        writeChoreography(new ChoreographyJsonConverter().toJson(choreography));
-
         choreographyView().setChoreography(choreography);
+    }
+
+    private void writeChoreography() {
+        writeChoreography(new ChoreographyJsonConverter().toJson(choreography));
     }
 
     private void writeChoreography(final String json) {
@@ -107,6 +114,7 @@ public class EditChoreography extends Activity {
             final File file = new File(dir, "test.choreo");
             try {
                 write(json, file, UTF_8);
+                Log.d(LOG_TAG, "saved choreography to " + file.getAbsolutePath());
             } catch (final IOException e) {
                 // TODO: aler the user
                 Log.e(LOG_TAG, "save failed", e);
