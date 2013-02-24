@@ -13,6 +13,9 @@ public class ChoreographyJsonConverter {
     }
 
     public Choreography fromJson(final String json) {
-        return new Choreography("dupa");
+        final Choreography choreography = new Choreography("dupa");
+        // TODO: load from JSON
+        choreography.setMusicPath("content://media/external/audio/media/14");
+        return choreography;
     }
 }

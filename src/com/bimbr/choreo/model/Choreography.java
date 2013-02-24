@@ -14,6 +14,7 @@ public class Choreography {
     private static final int MILLIS_IN_MINUTE = MILLIS_IN_SECOND * 60;
 
     private String           title;
+    private String           musicPath;
     private int              musicDurationMs;
     private final int        beatsPerMinute   = 120;                  // FIXME: make configurable
     private final int        measuresPerBar   = 4;                    // FIXME: make configurable
@@ -39,6 +40,14 @@ public class Choreography {
 
     public void setTitle(final String title) {
         this.title = title;
+    }
+
+    public String getMusicPath() {
+        return musicPath;
+    }
+
+    public void setMusicPath(final String musicPath) {
+        this.musicPath = musicPath;
     }
 
     public int getMeasureCount() {
