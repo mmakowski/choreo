@@ -10,21 +10,18 @@ import java.util.List;
  * @author mmakowski
  */
 public class Choreography {
-    private static final int    MILLIS_IN_SECOND = 1000;
-    private static final int    MILLIS_IN_MINUTE = MILLIS_IN_SECOND * 60;
+    private static final int MILLIS_IN_SECOND = 1000;
+    private static final int MILLIS_IN_MINUTE = MILLIS_IN_SECOND * 60;
 
-    private final int          musicDurationMs;
-    private final int          beatsPerMinute   = 120;                  // FIXME: make configurable
-    private final int          measuresPerBar   = 4;                    // FIXME: make configurable
-    private final int          measureCount;
-    private final List<Move>[] moves;                                   // lists of moves for each measure
+    private String           title;
+    private int              musicDurationMs;
+    private final int        beatsPerMinute   = 120;                  // FIXME: make configurable
+    private final int        measuresPerBar   = 4;                    // FIXME: make configurable
+    private int              measureCount;
+    private List<Move>[]     moves;                                   // lists of moves for each measure
 
-    @SuppressWarnings("unchecked")
-    public Choreography(final int musicDurationMs) {
-        this.musicDurationMs = musicDurationMs;
-        this.measureCount = musicDurationMs * beatsPerMinute / MILLIS_IN_MINUTE;
-        this.moves = new List[measureCount];
-        for (int i = 0; i < measureCount; i++) moves[i] = new ArrayList<Move>(5);
+    public Choreography(final String title) {
+        this.title = title;
     }
 
     public List<Move> movesInMeasure(final int measureIndex) {
@@ -34,6 +31,14 @@ public class Choreography {
     public void addMove(final int measureIndex, final Move move) {
         moves[measureIndex].add(move);
         if (moveAddedListener != null) moveAddedListener.onMoveAdded(measureIndex, move);
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(final String title) {
+        this.title = title;
     }
 
     public int getMeasureCount() {
@@ -46,6 +51,14 @@ public class Choreography {
 
     public int getMusicDurationMs() {
         return musicDurationMs;
+    }
+
+    @SuppressWarnings("unchecked")
+    public void setMusicDurationMs(final int durationMs) {
+        musicDurationMs = durationMs;
+        measureCount    = musicDurationMs * beatsPerMinute / MILLIS_IN_MINUTE;
+        moves           = new List[measureCount];
+        for (int i = 0; i < measureCount; i++) moves[i] = new ArrayList<Move>(5);
     }
 
     public int getMeasuresPerBar() {

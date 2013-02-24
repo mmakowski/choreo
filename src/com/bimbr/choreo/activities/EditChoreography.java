@@ -30,6 +30,7 @@ import android.widget.Button;
 
 import com.bimbr.android.media.NotifyingMediaPlayer;
 import com.bimbr.choreo.R;
+import com.bimbr.choreo.app.ChoreoApplication;
 import com.bimbr.choreo.model.Choreography;
 import com.bimbr.choreo.model.Dictionary;
 import com.bimbr.choreo.model.Move;
@@ -46,8 +47,6 @@ public class EditChoreography extends Activity {
     private static final int SELECT_MUSIC_REQUEST_CODE = 1;
     private static final String LOG_TAG = "NewChoreo";
 
-    private Choreography choreography;
-
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,7 +57,7 @@ public class EditChoreography extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        if (choreography != null) writeChoreography();
+        writeChoreography();
     }
 
     private void setControlledMediaPlayer(final NotifyingMediaPlayer player) {
@@ -94,12 +93,18 @@ public class EditChoreography extends Activity {
     }
 
     private void createChoreography(final NotifyingMediaPlayer mediaPlayer) {
-        choreography = new Choreography(mediaPlayer.getDuration());
+        final Choreography choreography = new Choreography("test");
+        choreography.setMusicDurationMs(mediaPlayer.getDuration());
+        ((ChoreoApplication) getApplication()).setChoreography(choreography);
         choreographyView().setChoreography(choreography);
     }
 
     private void writeChoreography() {
-        writeChoreography(new ChoreographyJsonConverter().toJson(choreography));
+        writeChoreography(new ChoreographyJsonConverter().toJson(choreography()));
+    }
+
+    private Choreography choreography() {
+        return ((ChoreoApplication) getApplication()).getChoreography();
     }
 
     private void writeChoreography(final String json) {
@@ -174,7 +179,7 @@ public class EditChoreography extends Activity {
     }
 
     private Dialog movePickerDialog(final int measureIndex) {
-        // TODO: read dictionary once when choreography is created
+        // TODO: read dictionary once, when choreography is created
         final Dictionary dict;
         try {
             dict = Dictionary.fromInputStream(getAssets().openFd("dictionary.txt").createInputStream());
@@ -189,7 +194,7 @@ public class EditChoreography extends Activity {
                .setItems(items, new DialogInterface.OnClickListener() {
                    @Override
                    public void onClick(final DialogInterface dialog, final int which) {
-                       choreography.addMove(measureIndex, new Move(dict.symbolFor(items[which])));
+                       choreography().addMove(measureIndex, new Move(dict.symbolFor(items[which])));
                    }
                });
         return builder.create();

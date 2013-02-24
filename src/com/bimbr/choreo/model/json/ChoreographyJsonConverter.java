@@ -13,6 +13,6 @@ public class ChoreographyJsonConverter {
     }
 
     public Choreography fromJson(final String json) {
-        return new Choreography(45000);
+        return new Choreography("dupa");
     }
 }
