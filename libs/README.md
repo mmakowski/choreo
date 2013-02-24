@@ -1,5 +1,6 @@
 requires:
 
 * android-support-v4.jar
+* gson-2.2.2.jar
 * guava-13.0.1.jar
 

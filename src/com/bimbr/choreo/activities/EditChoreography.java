@@ -18,7 +18,6 @@ import android.widget.Button;
 
 import com.bimbr.android.media.NotifyingMediaPlayer;
 import com.bimbr.choreo.R;
-import com.bimbr.choreo.model.Choreography;
 import com.bimbr.choreo.model.Dictionary;
 import com.bimbr.choreo.model.Move;
 import com.bimbr.choreo.view.ChoreographyView;
@@ -65,7 +64,7 @@ public class EditChoreography extends ChoreoActivity {
             @Override
             public void onPrepared(final MediaPlayer player) {
                 setControlledMediaPlayer(mediaPlayer);
-                createChoreography(mediaPlayer);
+                updateChoreographyFrom(mediaPlayer);
             }});
 
         try {
@@ -78,11 +77,9 @@ public class EditChoreography extends ChoreoActivity {
         }
     }
 
-    private void createChoreography(final NotifyingMediaPlayer mediaPlayer) {
-        final Choreography choreography = new Choreography("test");
-        choreography.setMusicDurationMs(mediaPlayer.getDuration());
-        application().setChoreography(choreography);
-        choreographyView().setChoreography(choreography);
+    private void updateChoreographyFrom(final NotifyingMediaPlayer mediaPlayer) {
+        choreography().setMusicDurationMs(mediaPlayer.getDuration());
+        choreographyView().setChoreography(choreography());
     }
 
     @Override

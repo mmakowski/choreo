@@ -80,7 +80,7 @@ public class Choreography {
 
     // -- events -------------------------
 
-    private OnMoveAddedListener moveAddedListener;
+    private transient OnMoveAddedListener moveAddedListener;
 
     public void setOnMoveAddedListener(final OnMoveAddedListener listener) {
         this.moveAddedListener = listener;
