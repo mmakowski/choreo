@@ -17,8 +17,6 @@ public class ChoreographyJsonConverter {
     public Choreography fromJson(final String json) {
         final Gson gson = new Gson();
         final Choreography choreography = gson.fromJson(json, Choreography.class);
-        // TODO: load from JSON
-        // choreography.setMusicPath("content://media/external/audio/media/14");
         return choreography;
     }
 }

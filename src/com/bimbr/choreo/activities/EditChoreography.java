@@ -64,6 +64,7 @@ public class EditChoreography extends ChoreoActivity {
             @Override
             public void onPrepared(final MediaPlayer player) {
                 setControlledMediaPlayer(mediaPlayer);
+                // TODO: only do this for new choreographies
                 updateChoreographyFrom(mediaPlayer);
             }});
 

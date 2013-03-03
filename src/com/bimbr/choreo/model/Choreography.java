@@ -1,5 +1,7 @@
 package com.bimbr.choreo.model;
 
+import static java.util.Arrays.copyOf;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,10 +18,11 @@ public class Choreography {
     private String           title;
     private String           musicPath;
     private int              musicDurationMs;
-    private final int        beatsPerMinute   = 120;                  // FIXME: make configurable
-    private final int        measuresPerBar   = 4;                    // FIXME: make configurable
+    private final int        beatsPerMinute   = 120;            // FIXME: make configurable
+    private final int        measuresPerBar   = 4;              // FIXME: make configurable
     private int              measureCount;
-    private List<Move>[]     moves;                                   // lists of moves for each measure
+    @SuppressWarnings("unchecked")
+    private List<Move>[]     moves            = new List[0];    // lists of moves for each measure
 
     public Choreography(final String title) {
         this.title = title;
@@ -62,12 +65,12 @@ public class Choreography {
         return musicDurationMs;
     }
 
-    @SuppressWarnings("unchecked")
     public void setMusicDurationMs(final int durationMs) {
         musicDurationMs = durationMs;
         measureCount    = musicDurationMs * beatsPerMinute / MILLIS_IN_MINUTE;
-        moves           = new List[measureCount];
-        for (int i = 0; i < measureCount; i++) moves[i] = new ArrayList<Move>(5);
+        final int oldLength = moves.length;
+        moves           = copyOf(moves, measureCount);
+        for (int i = oldLength; i < measureCount; i++) moves[i] = new ArrayList<Move>(5);
     }
 
     public int getMeasuresPerBar() {
