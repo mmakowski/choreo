@@ -7,6 +7,7 @@ import java.io.IOException;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.net.Uri;
@@ -23,7 +24,6 @@ import com.bimbr.choreo.model.Move;
 import com.bimbr.choreo.persistence.Persistence;
 import com.bimbr.choreo.view.ChoreographyView;
 import com.bimbr.choreo.view.ChoreographyView.OnAddMoveListener;
-import com.google.common.collect.ImmutableMap;
 
 /**
  * Editing choreography.
@@ -81,11 +81,12 @@ public class EditChoreography extends ChoreoActivity {
             }});
 
         try {
-            mediaPlayer.setDataSource(this, Uri.parse(selectedAudioPath), ImmutableMap.<String, String>of());
+            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            mediaPlayer.setDataSource(this, Uri.parse(selectedAudioPath));
             mediaPlayer.prepare();
             Log.d("AudioPlayer", "prepared " + selectedAudioPath);
         } catch (final IOException e) {
-            Log.e("AudioPlayer", "Could not open file " + selectedAudioPath + " for playback.", e);
+            Log.e("AudioPlayer", "Could not open " + selectedAudioPath + " for playback.", e);
             // TODO: report to user
         }
     }
