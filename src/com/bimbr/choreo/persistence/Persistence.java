@@ -1,9 +1,6 @@
 package com.bimbr.choreo.persistence;
 
-import static android.os.Environment.MEDIA_MOUNTED;
-import static android.os.Environment.getExternalStorageState;
 import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Iterables.transform;
 import static com.google.common.io.Files.write;
 
@@ -11,7 +8,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 
-import android.os.Environment;
 import android.util.Log;
 
 import com.bimbr.choreo.model.Choreography;
@@ -27,19 +23,29 @@ import com.google.common.io.Files;
  */
 public class Persistence {
     private static final String LOG_TAG = "Persistence";
-    private static final File ROOT_DIR = new File(Environment.getExternalStorageDirectory(), "Choreo");
-    private static final File CHOREOGRAPHY_DIR = new File(ROOT_DIR, "choreographies");
+    private final File choreographyDir;
+
+    /**
+     * @param rootDir root of application's data files
+     * @return a persistance instance for given root directory
+     */
+    public static Persistence withRoot(final File rootDir) {
+        return new Persistence(rootDir);
+    }
+
+    private Persistence(final File rootDir) {
+        choreographyDir = new File(rootDir, "choreographies");
+    }
 
     /**
      * Writes supplied choreography to a file whose name is derived from choreography name.
      *
      * @param choreography the choreography to write
      */
-    public static void writeChoreography(final Choreography choreography) {
-        checkState(sdCardIsWriteable(), "SD card is not writeable");
+    public void writeChoreography(final Choreography choreography) {
         final String json = new ChoreographyJsonConverter().toJson(choreography);
-        ensureExists(CHOREOGRAPHY_DIR);
-        final File file = new File(CHOREOGRAPHY_DIR, "test.choreo");
+        ensureExists(choreographyDir);
+        final File file = new File(choreographyDir, "test.choreo"); // TODO: derive from name
         try {
             write(json, file, UTF_8);
             Log.d(LOG_TAG, "saved choreography to " + file.getAbsolutePath());
@@ -57,9 +63,9 @@ public class Persistence {
     /**
      * @return a list of choreography file information
      */
-    public static Iterable<FileInfo> choreographyFiles() {
-        ensureExists(CHOREOGRAPHY_DIR);
-        return transform(ImmutableList.copyOf(CHOREOGRAPHY_DIR.listFiles()), toChoreographyFileInfo);
+    public Iterable<FileInfo> choreographyFiles() {
+        ensureExists(choreographyDir);
+        return transform(ImmutableList.copyOf(choreographyDir.listFiles()), toChoreographyFileInfo);
     }
 
     private static final Function<File, FileInfo> toChoreographyFileInfo = new Function<File, FileInfo>() {
@@ -67,10 +73,6 @@ public class Persistence {
         public FileInfo apply(final File file) {
             return new FileInfo(file.getName(), new Date(file.lastModified()).toString(), file.getAbsolutePath());
         }};
-
-    private static boolean sdCardIsWriteable() {
-        return MEDIA_MOUNTED.equals(getExternalStorageState());
-    }
 
     /**
      * @param file file that contains choreography

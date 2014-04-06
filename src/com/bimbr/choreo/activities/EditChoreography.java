@@ -1,6 +1,5 @@
 package com.bimbr.choreo.activities;
 
-import static com.bimbr.choreo.persistence.Persistence.writeChoreography;
 import static com.google.common.collect.Iterables.toArray;
 
 import java.io.IOException;
@@ -10,6 +9,7 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnPreparedListener;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -20,8 +20,10 @@ import com.bimbr.android.media.NotifyingMediaPlayer;
 import com.bimbr.choreo.R;
 import com.bimbr.choreo.model.Dictionary;
 import com.bimbr.choreo.model.Move;
+import com.bimbr.choreo.persistence.Persistence;
 import com.bimbr.choreo.view.ChoreographyView;
 import com.bimbr.choreo.view.ChoreographyView.OnAddMoveListener;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Editing choreography.
@@ -30,6 +32,7 @@ import com.bimbr.choreo.view.ChoreographyView.OnAddMoveListener;
  */
 public class EditChoreography extends ChoreoActivity {
     private static final String LOG_TAG = "NewChoreo";
+    private NotifyingMediaPlayer mediaPlayer;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -42,7 +45,15 @@ public class EditChoreography extends ChoreoActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        writeChoreography(choreography());
+        Persistence.withRoot(getFilesDir()).writeChoreography(choreography());
+        // TODO: save media player position
+        mediaPlayer.release();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        prepareMediaPlayerFor(choreography().getMusicPath());
     }
 
     private void setControlledMediaPlayer(final NotifyingMediaPlayer player) {
@@ -58,7 +69,8 @@ public class EditChoreography extends ChoreoActivity {
     }
 
     private void prepareMediaPlayerFor(final String selectedAudioPath) {
-        final NotifyingMediaPlayer mediaPlayer = new NotifyingMediaPlayer();
+        if (mediaPlayer != null) mediaPlayer.release();
+        mediaPlayer = new NotifyingMediaPlayer();
 
         mediaPlayer.setOnPreparedListener(new OnPreparedListener() {
             @Override
@@ -69,7 +81,7 @@ public class EditChoreography extends ChoreoActivity {
             }});
 
         try {
-            mediaPlayer.setDataSource(selectedAudioPath);
+            mediaPlayer.setDataSource(this, Uri.parse(selectedAudioPath), ImmutableMap.<String, String>of());
             mediaPlayer.prepare();
             Log.d("AudioPlayer", "prepared " + selectedAudioPath);
         } catch (final IOException e) {

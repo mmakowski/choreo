@@ -3,8 +3,6 @@ package com.bimbr.choreo.activities;
 import static android.content.Intent.ACTION_GET_CONTENT;
 import static android.content.Intent.CATEGORY_OPENABLE;
 import static android.content.Intent.createChooser;
-import static android.os.Environment.getExternalStorageDirectory;
-import static com.bimbr.choreo.persistence.Persistence.choreographyFiles;
 import static com.bimbr.choreo.persistence.Persistence.choreographyLoadedFrom;
 import static com.google.common.collect.Iterables.transform;
 
@@ -24,6 +22,7 @@ import android.widget.SimpleAdapter;
 
 import com.bimbr.choreo.R;
 import com.bimbr.choreo.persistence.FileInfo;
+import com.bimbr.choreo.persistence.Persistence;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -89,7 +88,7 @@ public class Welcome extends ChoreoActivity {
     }
 
     private void setFilePickerItems() {
-        choreographyFiles = ImmutableList.copyOf(choreographyFiles());
+        choreographyFiles = ImmutableList.copyOf(Persistence.withRoot(getFilesDir()).choreographyFiles());
         final SimpleAdapter adapter = new SimpleAdapter(this,
                                                         files(),
                                                         android.R.layout.simple_list_item_2,
@@ -121,9 +120,9 @@ public class Welcome extends ChoreoActivity {
     // TODO: move to settings:
 
     private void promptForMusic() {
-        final String path = getExternalStorageDirectory().getAbsolutePath();
+        final String path = "/";
         final Intent musicSelection = new Intent(path);
-        musicSelection.setType("audio/mp3");
+        musicSelection.setType("audio/*");
         musicSelection.setAction(ACTION_GET_CONTENT);
         musicSelection.addCategory(CATEGORY_OPENABLE);
         startActivityForResult(createChooser(musicSelection, "Select music"), SELECT_MUSIC_REQUEST_CODE);
