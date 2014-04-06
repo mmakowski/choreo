@@ -33,6 +33,7 @@ import com.bimbr.choreo.view.ChoreographyView.OnAddMoveListener;
 public class EditChoreography extends ChoreoActivity {
     private static final String LOG_TAG = "NewChoreo";
     private NotifyingMediaPlayer mediaPlayer;
+    private int playPositionMs = 0;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -46,7 +47,7 @@ public class EditChoreography extends ChoreoActivity {
     protected void onPause() {
         super.onPause();
         Persistence.withRoot(getFilesDir()).writeChoreography(choreography());
-        // TODO: save media player position
+        playPositionMs = mediaPlayer.getCurrentPosition();
         mediaPlayer.release();
     }
 
@@ -54,6 +55,7 @@ public class EditChoreography extends ChoreoActivity {
     protected void onResume() {
         super.onResume();
         prepareMediaPlayerFor(choreography().getMusicPath());
+        mediaPlayer.seekTo(playPositionMs);
     }
 
     private void setControlledMediaPlayer(final NotifyingMediaPlayer player) {
