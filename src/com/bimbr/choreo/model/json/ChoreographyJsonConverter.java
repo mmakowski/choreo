@@ -16,7 +16,6 @@ public class ChoreographyJsonConverter {
 
     public Choreography fromJson(final String json) {
         final Gson gson = new Gson();
-        final Choreography choreography = gson.fromJson(json, Choreography.class);
-        return choreography;
+        return gson.fromJson(json, Choreography.class);
     }
 }
