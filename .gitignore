@@ -1,4 +1,3 @@
-gen/*
-bin/*
-libs/*.jar
+target
+project/project
 .idea/workspace.xml
