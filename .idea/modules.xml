@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/choreo.iml" filepath="$PROJECT_DIR$/choreo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea_modules/Sparrow.iml" filepath="$PROJECT_DIR$/.idea_modules/Sparrow.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea_modules/Sparrow-build.iml" filepath="$PROJECT_DIR$/.idea_modules/Sparrow-build.iml" />
     </modules>
   </component>
 </project>

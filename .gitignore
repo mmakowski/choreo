@@ -1,3 +1,4 @@
 target
 project/project
+proguard_logs
 .idea/workspace.xml

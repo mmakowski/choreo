@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="android.jar">
+    <CLASSES>
+      <root url="jar:///opt/android-sdk-linux-22.6.2/platforms/android-19/android.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

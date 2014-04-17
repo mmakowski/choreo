@@ -16,6 +16,8 @@ scalaVersion := "2.10.2"
 // Version of the Android platform SDK
 platformName := "android-19"
 
+javacOptions ++= Seq("-source", "1.7", "-target", "1.7")
+
 libraryDependencies ++= Seq(
   "com.google.code.gson" % "gson"           % "2.2.2",
   "com.google.guava"     % "guava"          % "13.0.1",
