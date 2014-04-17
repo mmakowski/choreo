@@ -81,12 +81,24 @@ public class Choreography {
         return moves[measureIndex];
     }
 
-    // -- events -------------------------
+    public void addTempoChangeMeasuresPerMinute(int timeMs, int measuresPerMinute) {
+        throw new IllegalStateException("TODO");
+    }
+
+    public void addMeterChangeMeasuresPerBar(int timeMs, int measuresPerBar) {
+        throw new IllegalStateException("TODO");
+    }
+
+    // -- hooks -------------------------
 
     private transient OnMoveAddedListener moveAddedListener;
 
     public void setOnMoveAddedListener(final OnMoveAddedListener listener) {
         this.moveAddedListener = listener;
+    }
+
+    public Iterable<Event> getEvents() {
+        throw new IllegalStateException("TODO");
     }
 
     public interface OnMoveAddedListener {
@@ -95,5 +107,23 @@ public class Choreography {
          * @param move the move that was added
          */
         void onMoveAdded(int measureIndex, Move move);
+    }
+
+    // -- events -------------------------
+
+    public interface Event {
+        int getTimeMs();
+    }
+
+    public static final class Measure implements Event {
+        private final int timeMs;
+
+        private Measure(int timeMs) {
+            this.timeMs = timeMs;
+        }
+
+        public int getTimeMs() {
+            return timeMs;
+        }
     }
 }
