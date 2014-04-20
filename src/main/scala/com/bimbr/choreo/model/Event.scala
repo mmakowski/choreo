@@ -1,13 +1,11 @@
 package com.bimbr.choreo.model
 
-import scala.concurrent.duration.Duration
-
 sealed trait Event {
-  def time: Duration
+  def time: Instant
 }
 
-case class TempoChange(time: Duration, measuresPerMinute: Int) extends Event
-case class MeterChange(time: Duration, measuresPerBar: Int) extends Event
-case class Bar(time: Duration) extends Event
-case class Measure(time: Duration) extends Event
-case class Move2(time: Duration, symbol: String, name: String) extends Event
+final case class TempoChange(time: Instant, tempo: Tempo) extends Event
+final case class MeterChange(time: Instant, meter: Meter) extends Event
+final case class Bar(time: Instant) extends Event
+final case class Measure(time: Instant) extends Event
+final case class Move2(time: Instant, symbol: MoveSymbol) extends Event
